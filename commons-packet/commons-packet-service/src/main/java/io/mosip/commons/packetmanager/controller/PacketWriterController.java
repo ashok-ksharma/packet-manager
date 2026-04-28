@@ -17,10 +17,12 @@ import io.mosip.commons.packet.dto.TagRequestDto;
 import io.mosip.commons.packet.dto.TagResponseDto;
 import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.commons.packet.facade.PacketWriter;
+import io.mosip.commons.packet.util.PacketManagerLogger;
 import io.mosip.commons.packetmanager.service.PacketWriterService;
 import io.mosip.kernel.core.http.RequestWrapper;
 import io.mosip.kernel.core.http.ResponseFilter;
 import io.mosip.kernel.core.http.ResponseWrapper;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.DateUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +36,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @RestController
 @Tag(name = "packet-writer-controller", description = "Packet Writer Controller")
 public class PacketWriterController {
+    private static final Logger LOGGER = PacketManagerLogger.getLogger(PacketWriterController.class);
+    private static final String API_TIME_TAKEN_LOG = "API_TIME_TAKEN";
 
     @Autowired
     private PacketWriter packetWriter;
@@ -50,11 +54,16 @@ public class PacketWriterController {
 			@ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(hidden = true))),
 			@ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(hidden = true))) })
     public ResponseWrapper<List<PacketInfo>> createPacket(@RequestBody(required = true) RequestWrapper<PacketDto> requestr) {
-
-        List<PacketInfo> resultField = packetWriter.createPacket(requestr.getRequest());
-        ResponseWrapper<List<PacketInfo>> response = getResponseWrapper();
-        response.setResponse(resultField);
-        return response;
+        long startTime = System.currentTimeMillis();
+        String registrationId = requestr.getRequest() != null ? requestr.getRequest().getId() : "";
+        try {
+            List<PacketInfo> resultField = packetWriter.createPacket(requestr.getRequest());
+            ResponseWrapper<List<PacketInfo>> response = getResponseWrapper();
+            response.setResponse(resultField);
+            return response;
+        } finally {
+            logApiTimeTaken("createPacket", registrationId, startTime);
+        }
     }
 
     private ResponseWrapper getResponseWrapper() {
@@ -77,11 +86,16 @@ public class PacketWriterController {
 			@ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(hidden = true))) })
 	public ResponseWrapper<TagResponseDto> setTags(
 			@RequestBody(required = true) RequestWrapper<TagDto> tagRequest) {
-
-		TagResponseDto tagResponse = packetWriterService.addTags(tagRequest.getRequest());
-		ResponseWrapper<TagResponseDto> response = getResponseWrapper();
-		response.setResponse(tagResponse);
-		return response;
+        long startTime = System.currentTimeMillis();
+        String registrationId = tagRequest.getRequest() != null ? tagRequest.getRequest().getId() : "";
+        try {
+		    TagResponseDto tagResponse = packetWriterService.addTags(tagRequest.getRequest());
+		    ResponseWrapper<TagResponseDto> response = getResponseWrapper();
+		    response.setResponse(tagResponse);
+		    return response;
+        } finally {
+            logApiTimeTaken("addTag", registrationId, startTime);
+        }
 	}
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getPostaddorupdatetag())")
 	//@PreAuthorize("hasAnyRole('REGISTRATION_PROCESSOR')")
@@ -94,11 +108,16 @@ public class PacketWriterController {
 			@ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(hidden = true))),
 			@ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(hidden = true))) })
 	public ResponseWrapper<TagResponseDto> updateTags(@RequestBody(required = true) RequestWrapper<TagDto> tagRequest) {
-
-		TagResponseDto tagResponse = packetWriterService.updateTags(tagRequest.getRequest());
-		ResponseWrapper<TagResponseDto> response = getResponseWrapper();
-		response.setResponse(tagResponse);
-		return response;
+        long startTime = System.currentTimeMillis();
+        String registrationId = tagRequest.getRequest() != null ? tagRequest.getRequest().getId() : "";
+        try {
+		    TagResponseDto tagResponse = packetWriterService.updateTags(tagRequest.getRequest());
+		    ResponseWrapper<TagResponseDto> response = getResponseWrapper();
+		    response.setResponse(tagResponse);
+		    return response;
+        } finally {
+            logApiTimeTaken("addOrUpdateTag", registrationId, startTime);
+        }
 	}
 	//@PreAuthorize("hasAnyRole('REGISTRATION_PROCESSOR')")
 	@ResponseFilter
@@ -111,10 +130,21 @@ public class PacketWriterController {
 			@ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(hidden = true))),
 			@ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(hidden = true))) })
 	public ResponseWrapper<TagDeleteResponseDto> deleteTags(@RequestBody(required = true) RequestWrapper<TagRequestDto> tagRequest) {
-
-		TagDeleteResponseDto tagResponse = packetWriterService.deleteTags(tagRequest.getRequest());
-		ResponseWrapper<TagDeleteResponseDto> response = getResponseWrapper();
-		response.setResponse(tagResponse);
-		return response;
+        long startTime = System.currentTimeMillis();
+        String registrationId = tagRequest.getRequest() != null ? tagRequest.getRequest().getId() : "";
+        try {
+		    TagDeleteResponseDto tagResponse = packetWriterService.deleteTags(tagRequest.getRequest());
+		    ResponseWrapper<TagDeleteResponseDto> response = getResponseWrapper();
+		    response.setResponse(tagResponse);
+		    return response;
+        } finally {
+            logApiTimeTaken("deleteTag", registrationId, startTime);
+        }
 	}
+
+    private void logApiTimeTaken(String apiName, String registrationId, long startTime) {
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                API_TIME_TAKEN_LOG + " | apiName: " + apiName + " | timeTakenInMs: "
+                        + (System.currentTimeMillis() - startTime));
+    }
 }
