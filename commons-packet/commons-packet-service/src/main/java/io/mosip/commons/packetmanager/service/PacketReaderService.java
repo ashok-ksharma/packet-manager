@@ -91,12 +91,23 @@ public class PacketReaderService {
     private ObjectMapper objectMapper;
 
     public InfoResponseDto info(String id) {
-        return mergeProcessWithMultipleIteration(infoInternal(id));
+        long t0 = System.currentTimeMillis();
+        InfoResponseDto infoResponseDto = infoInternal(id);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "info | infoInternal | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        long t1 = System.currentTimeMillis();
+        InfoResponseDto result = mergeProcessWithMultipleIteration(infoResponseDto);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "info | mergeProcessWithMultipleIteration | timeTakenInMs: " + (System.currentTimeMillis() - t1));
+        return result;
     }
 
     private InfoResponseDto infoInternal(String id) {
         try {
+            long tInfo = System.currentTimeMillis();
             List<ObjectDto> allObjects = packetReader.info(id);
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                    "infoInternal | packetReader.info | containers: " + allObjects.size() + " | timeTakenInMs: " + (System.currentTimeMillis() - tInfo));
             List<ContainerInfoDto> containerInfoDtos = new ArrayList<>();
             Set<String> seen = new HashSet<>();
             String bioKey = getKey();
@@ -111,10 +122,16 @@ public class PacketReaderService {
                 containerInfo.setProcess(o.getProcess());
                 containerInfo.setLastModified(o.getLastModified());
 
+                long tKeys = System.currentTimeMillis();
                 Set<String> demographics = packetReader.getAllKeys(id, containerInfo.getSource(), containerInfo.getProcess());
+                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                        "infoInternal | getAllKeys | source: " + o.getSource() + " process: " + o.getProcess() + " | timeTakenInMs: " + (System.currentTimeMillis() - tKeys));
 
                 List<BiometricsDto> biometrics = null;
+                long tBio = System.currentTimeMillis();
                 BiometricRecord br = packetReader.getBiometric(id, bioKey, Lists.newArrayList(), o.getSource(), o.getProcess(), false);
+                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                        "infoInternal | getBiometric | source: " + o.getSource() + " process: " + o.getProcess() + " | timeTakenInMs: " + (System.currentTimeMillis() - tBio));
                 if (br != null && !CollectionUtils.isEmpty(br.getSegments())) {
                     Map<String, List<String>> biomap = new HashMap<>();
                     for (BIR b : br.getSegments()) {
@@ -145,7 +162,10 @@ public class PacketReaderService {
                 containerInfoDtos.add(containerInfo);
             }
             // get tags
+            long tTags = System.currentTimeMillis();
             Map<String, String> tags = packetReader.getTags(id);
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                    "infoInternal | getTags | timeTakenInMs: " + (System.currentTimeMillis() - tTags));
 
             InfoResponseDto infoResponseDto = new InfoResponseDto();
             infoResponseDto.setApplicationId(id);
@@ -238,7 +258,10 @@ public class PacketReaderService {
                 throw new SourceNotPresentException(e);
             }
         }
+        long t0 = System.currentTimeMillis();
         ObjectDto objectDto = searchProcessWithLatestIteration(id, source, process);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "getSourceAndProcess | searchProcessWithLatestIteration | source: " + source + " | process: " + process + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
         return new SourceProcessDto(objectDto.getSource(), objectDto.getProcess());
     }
 
@@ -450,7 +473,10 @@ public class PacketReaderService {
     public TagResponseDto getTags(TagRequestDto tagRequestDto) {
     	try {
 			Map<String, String> tags = new HashMap<String, String>();
+			long t0 = System.currentTimeMillis();
 			Map<String, String> existingTags = packetReader.getTags(tagRequestDto.getId());
+			LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, tagRequestDto.getId(),
+			        "getTags | packetReader.getTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
 			List<String> tagNames=tagRequestDto.getTagNames();
 		    TagResponseDto tagResponseDto = new TagResponseDto();
 			if (tagNames != null && !tagNames.isEmpty()) {

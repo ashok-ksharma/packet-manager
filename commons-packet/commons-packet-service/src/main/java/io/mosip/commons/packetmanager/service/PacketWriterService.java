@@ -74,7 +74,10 @@ public class PacketWriterService {
     public TagResponseDto updateTags(TagDto tagDto) {
     	try {
 			Map<String, String> newTags = new HashMap<String, String>();
+			long t0 = System.currentTimeMillis();
 			Map<String, String> existingTags = packetReader.getTags(tagDto.getId());
+			LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, tagDto.getId(),
+			        "updateTags | getTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
 			if (existingTags.isEmpty()) {
 				newTags.putAll(tagDto.getTags());
 			} else {
@@ -93,7 +96,10 @@ public class PacketWriterService {
 				tagResponseDto.setTags(tagDto.getTags());
 			} else {
 				tagDto.setTags(newTags);
+				long t1 = System.currentTimeMillis();
 				Map<String, String> tags = packetWriter.addTags(tagDto, tagDto.getId());
+				LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, tagDto.getId(),
+				        "updateTags | packetWriter.addTags | timeTakenInMs: " + (System.currentTimeMillis() - t1));
 				tagResponseDto.setTags(tags);
 			}
 

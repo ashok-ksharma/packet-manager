@@ -159,7 +159,11 @@ public class PacketReader {
 
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
                 "getBiometric for source : " + source + " process : " + process);
-        return getProvider(source, process).getBiometric(id, person, modalities, source, process, bypassCache);
+        long t0 = System.currentTimeMillis();
+        BiometricRecord result = getProvider(source, process).getBiometric(id, person, modalities, source, process, bypassCache);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "getBiometric | provider.getBiometric | person: " + person + " | source: " + source + " | process: " + process + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        return result;
     }
 
     /**
@@ -175,7 +179,11 @@ public class PacketReader {
     public Map<String, String> getMetaInfo(String id, String source, String process, boolean bypassCache) {
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
                 "getMetaInfo for source : " + source + " process : " + process);
-        return getProvider(source, process).getMetaInfo(id, source, process);
+        long t0 = System.currentTimeMillis();
+        Map<String, String> result = getProvider(source, process).getMetaInfo(id, source, process);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "getMetaInfo | provider.getMetaInfo | source: " + source + " | process: " + process + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        return result;
     }
 
     /**
@@ -232,18 +240,31 @@ public class PacketReader {
     @Cacheable(value = "packets", key = "{#p0.concat('-').concat(#p1).concat('-').concat(#p2)}", condition = "#p3 == false" ,unless = "#result == null")
     public List<Map<String, String>> getAudits(String id, String source, String process, boolean bypassCache) {
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-                "getAllFields for source : " + source + " process : " + process);
-        return getProvider(source, process).getAuditInfo(id, source, process);
+                "getAudits for source : " + source + " process : " + process);
+        long t0 = System.currentTimeMillis();
+        List<Map<String, String>> result = getProvider(source, process).getAuditInfo(id, source, process);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "getAudits | provider.getAuditInfo | source: " + source + " | process: " + process + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        return result;
     }
 
     @Cacheable(value = "tags", key = "{#p0}" ,unless = "#result == null")
     public  Map<String, String>  getTags(String id) {
+        long t0 = System.currentTimeMillis();
         Map<String, String> tags = packetKeeper.getTags(id);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "getTags | packetKeeper.getTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
         return tags;
     }
 
     public boolean validatePacket(String id, String source, String process) {
-        return getProvider(source, process).validatePacket(id, source, process);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "validatePacket for source : " + source + " process : " + process);
+        long t0 = System.currentTimeMillis();
+        boolean result = getProvider(source, process).validatePacket(id, source, process);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "validatePacket | provider.validatePacket | source: " + source + " | process: " + process + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        return result;
     }
 
     private IPacketReader getProvider(String source, String process) {

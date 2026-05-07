@@ -146,11 +146,17 @@ public class PacketReaderController {
         String registrationId = request.getRequest() != null ? request.getRequest().getId() : "";
         try {
             DocumentDto documentDto = request.getRequest();
+            long t0 = System.currentTimeMillis();
             SourceProcessDto sourceProcessDto = packetReaderService.getSourceAndProcess(documentDto.getId(),
                     documentDto.getDocumentName(), documentDto.getSource(), documentDto.getProcess());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "document | getSourceAndProcess | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+            long t1 = System.currentTimeMillis();
             Document document = sourceProcessDto == null ? null :
                     packetReader.getDocument(documentDto.getId(), documentDto.getDocumentName(),
                     sourceProcessDto.getSource(), sourceProcessDto.getProcess());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "document | getDocument | timeTakenInMs: " + (System.currentTimeMillis() - t1));
             ResponseWrapper<Document> response = new ResponseWrapper<Document>();
             response.setResponse(document);
             return response;
@@ -173,12 +179,18 @@ public class PacketReaderController {
         String registrationId = request.getRequest() != null ? request.getRequest().getId() : "";
         try {
             BiometricRequestDto bioRequest = request.getRequest();
+            long t0 = System.currentTimeMillis();
             SourceProcessDto sourceProcessDto = packetReaderService.getSourceAndProcess(bioRequest.getId(),
                     bioRequest.getPerson(), bioRequest.getSource(), bioRequest.getProcess());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "biometrics | getSourceAndProcess | person: " + bioRequest.getPerson() + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
             List<String> modalities = bioRequest.getModalities() == null ? Lists.newArrayList() : bioRequest.getModalities();
+            long t1 = System.currentTimeMillis();
             BiometricRecord responseDto = sourceProcessDto == null ? null :
                     packetReader.getBiometric(bioRequest.getId(), bioRequest.getPerson(), modalities,
                     sourceProcessDto.getSource(), sourceProcessDto.getProcess(), bioRequest.isBypassCache());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "biometrics | getBiometric | person: " + bioRequest.getPerson() + " | timeTakenInMs: " + (System.currentTimeMillis() - t1));
             ResponseWrapper<BiometricRecord> response = getResponseWrapper();
             response.setResponse(responseDto);
             return response;
@@ -201,9 +213,15 @@ public class PacketReaderController {
         String registrationId = request.getRequest() != null ? request.getRequest().getId() : "";
         try {
             InfoDto metaDto = request.getRequest();
+            long t0 = System.currentTimeMillis();
             SourceProcessDto sourceProcessDto = packetReaderService.getSourceAndProcess(metaDto.getId(), metaDto.getSource(), metaDto.getProcess());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "metaInfo | getSourceAndProcess | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+            long t1 = System.currentTimeMillis();
             Map<String, String> resultFields = packetReader.getMetaInfo(metaDto.getId(),
                     sourceProcessDto.getSource(), sourceProcessDto.getProcess(), metaDto.getBypassCache());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "metaInfo | getMetaInfo | timeTakenInMs: " + (System.currentTimeMillis() - t1));
             FieldResponseDto resultField = new FieldResponseDto(resultFields);
             ResponseWrapper<FieldResponseDto> response = getResponseWrapper();
             response.setResponse(resultField);
@@ -227,9 +245,15 @@ public class PacketReaderController {
         String registrationId = request.getRequest() != null ? request.getRequest().getId() : "";
         try {
             InfoDto metaDto = request.getRequest();
+            long t0 = System.currentTimeMillis();
             SourceProcessDto sourceProcessDto = packetReaderService.getSourceAndProcess(metaDto.getId(), metaDto.getSource(), metaDto.getProcess());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "audits | getSourceAndProcess | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+            long t1 = System.currentTimeMillis();
             List<Map<String, String>> resultFields = packetReader.getAudits(metaDto.getId(),
                     sourceProcessDto.getSource(), sourceProcessDto.getProcess(), metaDto.getBypassCache());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "audits | getAudits | timeTakenInMs: " + (System.currentTimeMillis() - t1));
             List<FieldResponseDto> resultField = new ArrayList<>();
             if (resultFields != null && !resultFields.isEmpty()) {
                 resultFields.stream().forEach(e -> {
@@ -259,8 +283,14 @@ public class PacketReaderController {
         String registrationId = request.getRequest() != null ? request.getRequest().getId() : "";
         try {
             InfoDto metaDto = request.getRequest();
+            long t0 = System.currentTimeMillis();
             SourceProcessDto sourceProcessDto = packetReaderService.getSourceAndProcess(metaDto.getId(), metaDto.getSource(), metaDto.getProcess());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "validatePacket | getSourceAndProcess | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+            long t1 = System.currentTimeMillis();
             boolean resultFields = packetReader.validatePacket(metaDto.getId(), sourceProcessDto.getSource(), sourceProcessDto.getProcess());
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                    "validatePacket | validatePacket | timeTakenInMs: " + (System.currentTimeMillis() - t1));
             ResponseWrapper<ValidatePacketResponse> response = getResponseWrapper();
             response.setResponse(new ValidatePacketResponse(resultFields));
             return response;
@@ -283,7 +313,10 @@ public class PacketReaderController {
         long startTime = System.currentTimeMillis();
         String registrationId = request.getRequest() != null ? request.getRequest().getId() : "";
         try {
+            long t0 = System.currentTimeMillis();
 		    TagResponseDto tagResponseDto = packetReaderService.getTags(request.getRequest());
+		    LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+		            "getTags | packetReaderService.getTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
 		    ResponseWrapper<TagResponseDto> response = getResponseWrapper();
 		    response.setResponse(tagResponseDto);
 		    return response;
@@ -307,8 +340,12 @@ public class PacketReaderController {
         try {
             String id = request.getRequest().getId();
             InfoResponseDto resultFields = null;
-            if (id != null && !id.isEmpty())
+            if (id != null && !id.isEmpty()) {
+                long t0 = System.currentTimeMillis();
                 resultFields = packetReaderService.info(id);
+                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                        "info | packetReaderService.info | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+            }
             ResponseWrapper<InfoResponseDto> response = getResponseWrapper();
             response.setResponse(resultFields);
             return response;
