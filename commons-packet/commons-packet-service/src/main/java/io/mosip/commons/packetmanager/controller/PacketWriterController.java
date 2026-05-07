@@ -38,6 +38,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class PacketWriterController {
     private static final Logger LOGGER = PacketManagerLogger.getLogger(PacketWriterController.class);
     private static final String API_TIME_TAKEN_LOG = "API_TIME_TAKEN";
+    private static final String API_TIME_TAKEN_LOG_GT_500_MS = "API_TIME_TAKEN_GT_500_MS";
+    private static final long API_TIME_THRESHOLD_MS = 500L;
 
     @Autowired
     private PacketWriter packetWriter;
@@ -143,8 +145,9 @@ public class PacketWriterController {
 	}
 
     private void logApiTimeTaken(String apiName, String registrationId, long startTime) {
+        long timeTakenInMs = System.currentTimeMillis() - startTime;
+        String logIdentifier = timeTakenInMs > API_TIME_THRESHOLD_MS ? API_TIME_TAKEN_LOG_GT_500_MS : API_TIME_TAKEN_LOG;
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
-                API_TIME_TAKEN_LOG + " | apiName: " + apiName + " | timeTakenInMs: "
-                        + (System.currentTimeMillis() - startTime));
+                logIdentifier + " | apiName: " + apiName + " | timeTakenInMs: " + timeTakenInMs);
     }
 }
