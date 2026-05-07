@@ -453,20 +453,13 @@ public class PacketReaderImpl implements IPacketReader {
 
 	@Override
 	public Map<String, String> getMetaInfo(String id, String source, String process) {
-		long startTime = System.currentTimeMillis();
-		LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id, "getMetaInfo :: entry");
 		Map<String, String> finalMap = new LinkedHashMap<>();
 
 		try {
-			long setupStart = System.currentTimeMillis();
 			Executor exec = packetFetchExecutor != null ? packetFetchExecutor : ForkJoinPool.commonPool();
 			String[] names = getPacketNames();
 			List<CompletableFuture<Packet>> futures = new ArrayList<>(names.length);
-			LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-					"API_TIME_TAKEN | methodName: getMetaInfo | step: setup | timeTakenInMs: "
-							+ (System.currentTimeMillis() - setupStart) + " | packetCount: " + names.length);
 
-			long scheduleFetchStart = System.currentTimeMillis();
 			for (String packetName : names) {
 				futures.add(CompletableFuture.supplyAsync(() -> {
 					try {
@@ -476,25 +469,11 @@ public class PacketReaderImpl implements IPacketReader {
 					}
 				}, exec));
 			}
-			LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-					"API_TIME_TAKEN | methodName: getMetaInfo | step: schedulePacketFetch | timeTakenInMs: "
-							+ (System.currentTimeMillis() - scheduleFetchStart));
 
-			long waitForFetchStart = System.currentTimeMillis();
 			CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-			LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-					"API_TIME_TAKEN | methodName: getMetaInfo | step: waitForPacketFetch | timeTakenInMs: "
-							+ (System.currentTimeMillis() - waitForFetchStart));
 
-			long processPacketsStart = System.currentTimeMillis();
 			for (CompletableFuture<Packet> future : futures) {
-				long futureJoinStart = System.currentTimeMillis();
 				Packet packet = future.join();
-				LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-						"API_TIME_TAKEN | methodName: getMetaInfo | step: futureJoin | timeTakenInMs: "
-								+ (System.currentTimeMillis() - futureJoinStart));
-
-				long parseMetaInfoStart = System.currentTimeMillis();
 				try (InputStream idJsonStream = ZipUtils.unzipAndGetFile(packet.getPacket(), "PACKET_META_INFO")) {
 					if (idJsonStream != null) {
 						byte[] bytearray = IOUtils.toByteArray(idJsonStream);
@@ -502,7 +481,6 @@ public class PacketReaderImpl implements IPacketReader {
 						LinkedHashMap<String, Object> currentIdMap = (LinkedHashMap<String, Object>) mapper
 								.readValue(jsonString, LinkedHashMap.class).get(IDENTITY);
 
-						long mergeMapStart = System.currentTimeMillis();
 						currentIdMap.keySet().stream().forEach(key -> {
 							try {
 								finalMap.putIfAbsent(key,
@@ -513,19 +491,9 @@ public class PacketReaderImpl implements IPacketReader {
 								throw new GetAllMetaInfoException(e.getMessage());
 							}
 						});
-						LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-								"API_TIME_TAKEN | methodName: getMetaInfo | step: mergeMetaInfoMap | timeTakenInMs: "
-										+ (System.currentTimeMillis() - mergeMapStart) + " | keysProcessed: "
-										+ currentIdMap.size());
 					}
 				}
-				LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-						"API_TIME_TAKEN | methodName: getMetaInfo | step: parsePacketMetaInfo | timeTakenInMs: "
-								+ (System.currentTimeMillis() - parseMetaInfoStart));
 			}
-			LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-					"API_TIME_TAKEN | methodName: getMetaInfo | step: processAllPackets | timeTakenInMs: "
-							+ (System.currentTimeMillis() - processPacketsStart) + " | finalMapSize: " + finalMap.size());
 		} catch (CompletionException ce) {
 			Throwable cause = ce.getCause() != null ? ce.getCause() : ce;
 			if (cause instanceof BaseCheckedException ex)
@@ -542,9 +510,6 @@ public class PacketReaderImpl implements IPacketReader {
 				throw new GetAllMetaInfoException(ex.getErrorCode(), ex.getMessage());
 			}
 			throw new GetAllMetaInfoException(e.getMessage());
-		} finally {
-			LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
-					"API_TIME_TAKEN | methodName: getMetaInfo | timeTakenInMs: " + (System.currentTimeMillis() - startTime));
 		}
 		return finalMap;
 	}

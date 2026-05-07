@@ -141,67 +141,43 @@ public class PacketKeeper {
      */
     public Packet getPacket(PacketInfo packetInfo) throws PacketKeeperException {
         String packetName = getName(packetInfo.getId(), packetInfo.getPacketName());
-        long startTime = System.currentTimeMillis();
-        try {
-            long downloadStart = System.currentTimeMillis();
-            InputStream objectStream = getAdapter().getObject(PACKET_MANAGER_ACCOUNT, packetInfo.getId(),
-                    packetInfo.getSource(), packetInfo.getProcess(), packetName);
-            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
-                    "API_TIME_TAKEN | methodName: getPacket | step: downloadObject | timeTakenInMs: "
-                            + (System.currentTimeMillis() - downloadStart));
-            try (InputStream is = objectStream) {
+        try (InputStream is = getAdapter().getObject(PACKET_MANAGER_ACCOUNT, packetInfo.getId(),
+                packetInfo.getSource(), packetInfo.getProcess(), packetName)) {
 
-                if (is == null) {
-                    LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
-                            packetName, packetInfo.getProcess() + " Packet is not present in packet store.");
-                    throw new PacketKeeperException(ErrorCode.PACKET_NOT_FOUND.getErrorCode(),
-                            ErrorCode.PACKET_NOT_FOUND.getErrorMessage());
-                }
-
-                long readStreamStart = System.currentTimeMillis();
-                // Convert stream to byte array (necessary for encryption/decryption and signature verification)
-                byte[] encryptedSubPacket = IOUtils.toByteArray(is);
-                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
-                        "API_TIME_TAKEN | methodName: getPacket | step: readObjectStream | timeTakenInMs: "
-                                + (System.currentTimeMillis() - readStreamStart));
-
-                Packet packet = new Packet();
-
-                long metadataFetchStart = System.currentTimeMillis();
-                // Get metadata
-                Map<String, Object> metaInfo = getAdapter().getMetaData(PACKET_MANAGER_ACCOUNT, packetInfo.getId(),
-                        packetInfo.getSource(), packetInfo.getProcess(), packetName);
-                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
-                        "API_TIME_TAKEN | methodName: getPacket | step: fetchMetadata | timeTakenInMs: "
-                                + (System.currentTimeMillis() - metadataFetchStart));
-                if (metaInfo != null && !metaInfo.isEmpty()) {
-                    packet.setPacketInfo(PacketManagerHelper.getPacketInfo(metaInfo));
-                } else {
-                    LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
-                            packetName, "metainfo not found for this packet");
-                    packet.setPacketInfo(packetInfo);
-                }
-                long decryptStart = System.currentTimeMillis();
-                byte[] subPacket = getCryptoService().decrypt(helper.getRefId(
-                        packet.getPacketInfo().getId(), packet.getPacketInfo().getRefId()), encryptedSubPacket);
-                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
-                        "API_TIME_TAKEN | methodName: getPacket | step: decryptObject | timeTakenInMs: "
-                                + (System.currentTimeMillis() - decryptStart));
-                packet.setPacket(subPacket);
-
-
-                long signatureCheckStart = System.currentTimeMillis();
-			    if (!checkSignature(packet, encryptedSubPacket)) {
-                    LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
-                            packetName, "Packet Integrity and Signature check failed");
-                    throw new PacketIntegrityFailureException();
-                }
-                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
-                        "API_TIME_TAKEN | methodName: getPacket | step: signatureAndIntegrityCheck | timeTakenInMs: "
-                                + (System.currentTimeMillis() - signatureCheckStart));
-
-                return packet;
+            if (is == null) {
+                LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
+                        packetName, packetInfo.getProcess() + " Packet is not present in packet store.");
+                throw new PacketKeeperException(ErrorCode.PACKET_NOT_FOUND.getErrorCode(),
+                        ErrorCode.PACKET_NOT_FOUND.getErrorMessage());
             }
+
+            // Convert stream to byte array (necessary for encryption/decryption and signature verification)
+            byte[] encryptedSubPacket = IOUtils.toByteArray(is);
+
+            Packet packet = new Packet();
+
+            // Get metadata
+            Map<String, Object> metaInfo = getAdapter().getMetaData(PACKET_MANAGER_ACCOUNT, packetInfo.getId(),
+                    packetInfo.getSource(), packetInfo.getProcess(), packetName);
+            if (metaInfo != null && !metaInfo.isEmpty()) {
+                packet.setPacketInfo(PacketManagerHelper.getPacketInfo(metaInfo));
+            } else {
+                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
+                        packetName, "metainfo not found for this packet");
+                packet.setPacketInfo(packetInfo);
+            }
+            byte[] subPacket = getCryptoService().decrypt(helper.getRefId(
+                    packet.getPacketInfo().getId(), packet.getPacketInfo().getRefId()), encryptedSubPacket);
+            packet.setPacket(subPacket);
+
+
+			if (!checkSignature(packet, encryptedSubPacket)) {
+                LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
+                        packetName, "Packet Integrity and Signature check failed");
+                throw new PacketIntegrityFailureException();
+            }
+
+            return packet;
         } catch (Exception e) {
             LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(), ExceptionUtils.getStackTrace(e));
             if (e.getMessage() != null && e.getMessage().contains(OBJECT_DOESNOT_EXISTS) && e.getMessage().contains(STATUS_404))
@@ -216,9 +192,6 @@ public class PacketKeeper {
             } else
                 throw new PacketKeeperException(PacketUtilityErrorCodes.PACKET_KEEPER_GET_ERROR.getErrorCode(),
                     "Exception occured reading packet : " + e.getMessage(), e);
-        } finally {
-            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
-                    "API_TIME_TAKEN | methodName: getPacket | timeTakenInMs: " + (System.currentTimeMillis() - startTime));
         }
     }
 
