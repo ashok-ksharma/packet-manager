@@ -104,15 +104,25 @@ public class PacketReaderController {
             Map<String, String> resultFields = new HashMap<>();
             if ((fieldDtos.getSource()) == null) {
                 for (String field : fieldDtos.getFields()) {
+                    long t0 = System.currentTimeMillis();
                     SourceProcessDto sourceProcessDto = packetReaderService.getSourceAndProcess(fieldDtos.getId(),
                             field, fieldDtos.getSource(), fieldDtos.getProcess());
+                    LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                            "searchFields | getSourceAndProcess | field: " + field + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+                    long t1 = System.currentTimeMillis();
                     String value = sourceProcessDto == null ? null :
                             packetReader.getField(fieldDtos.getId(), field, sourceProcessDto.getSource(),
                             sourceProcessDto.getProcess(), fieldDtos.getBypassCache());
+                    LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                            "searchFields | getField | field: " + field + " | timeTakenInMs: " + (System.currentTimeMillis() - t1));
                     resultFields.put(field, value);
                 }
-            } else
-            resultFields = packetReader.getFields(fieldDtos.getId(), fieldDtos.getFields(), fieldDtos.getSource(), fieldDtos.getProcess(), fieldDtos.getBypassCache());
+            } else {
+                long t0 = System.currentTimeMillis();
+                resultFields = packetReader.getFields(fieldDtos.getId(), fieldDtos.getFields(), fieldDtos.getSource(), fieldDtos.getProcess(), fieldDtos.getBypassCache());
+                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, registrationId,
+                        "searchFields | getFields | fields: " + fieldDtos.getFields() + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+            }
             FieldResponseDto resultField = new FieldResponseDto(resultFields);
             ResponseWrapper<FieldResponseDto> response = new ResponseWrapper<FieldResponseDto>();
             response.setResponse(resultField);

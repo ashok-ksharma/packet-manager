@@ -78,10 +78,17 @@ public class PacketReader {
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
                 "getFields for fields : " + field + " source : " + source + " process : " + process);
         String value;
-        if (bypassCache)
+        if (bypassCache) {
+            long t0 = System.currentTimeMillis();
             value = getProvider(source, process).getField(id, field, source, process);
-        else {
-            Optional<Object> optionalValue = getAllFields(id, source, process).entrySet().stream().filter(m-> m.getKey().equalsIgnoreCase(field) && m.getValue()!=null).map(m -> m.getValue()).findAny();
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                    "getField | provider.getField (bypassCache) | field: " + field + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        } else {
+            long t0 = System.currentTimeMillis();
+            Map<String, Object> allFields = getAllFields(id, source, process);
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                    "getField | getAllFields | field: " + field + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+            Optional<Object> optionalValue = allFields.entrySet().stream().filter(m-> m.getKey().equalsIgnoreCase(field) && m.getValue()!=null).map(m -> m.getValue()).findAny();
             value = optionalValue.isPresent() ? optionalValue.get().toString() : null;
         }
         return value;
@@ -101,10 +108,17 @@ public class PacketReader {
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
                 "getFields for fields : " + fields.toString() + " source : " + source + " process : " + process);
         Map<String, String> values;
-        if (bypassCache)
+        if (bypassCache) {
+            long t0 = System.currentTimeMillis();
             values = getProvider(source, process).getFields(id, fields, source, process);
-        else {
-            values = getAllFields(id, source, process).entrySet()
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                    "getFields | provider.getFields (bypassCache) | fields: " + fields + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        } else {
+            long t0 = System.currentTimeMillis();
+            Map<String, Object> allFields = getAllFields(id, source, process);
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                    "getFields | getAllFields | fields: " + fields + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+            values = allFields.entrySet()
                     .stream().filter(m -> fields.contains(m.getKey())).collect(Collectors.toMap(m -> m.getKey(), m -> m.getValue() != null ? m.getValue().toString() : null));
         }
         return values;

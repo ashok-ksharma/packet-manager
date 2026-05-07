@@ -247,7 +247,15 @@ public class PacketReaderService {
     }
 
     public SourceProcessDto getSourceAndProcess(String id, String field, String source, String process) {
-        return getSourceAndProcess(id, field, source, process, infoInternalForSourceResolution(id));
+        long t0 = System.currentTimeMillis();
+        InfoResponseDto infoResponseDto = infoInternalForSourceResolution(id);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "getSourceAndProcess | infoInternalForSourceResolution | field: " + field + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        long t1 = System.currentTimeMillis();
+        SourceProcessDto result = getSourceAndProcess(id, field, source, process, infoResponseDto);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "getSourceAndProcess | resolution | field: " + field + " | timeTakenInMs: " + (System.currentTimeMillis() - t1));
+        return result;
     }
 
     public SourceProcessDto getSourceAndProcess(String id, String field, String source, String process, InfoResponseDto infoResponseDto) {
