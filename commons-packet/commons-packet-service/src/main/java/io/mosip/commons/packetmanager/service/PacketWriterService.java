@@ -77,7 +77,7 @@ public class PacketWriterService {
 			long t0 = System.currentTimeMillis();
 			Map<String, String> existingTags = packetReader.getTags(tagDto.getId());
 			LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, tagDto.getId(),
-			        "updateTags | getTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+			        "updateTags | getTags | existingTagCount: " + existingTags.size() + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
 			if (existingTags.isEmpty()) {
 				newTags.putAll(tagDto.getTags());
 			} else {
@@ -93,13 +93,15 @@ public class PacketWriterService {
 			TagResponseDto tagResponseDto = new TagResponseDto();
 
 			if (newTags.isEmpty()) {
+				LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, tagDto.getId(),
+				        "updateTags | noChanges | incomingTagCount: " + tagDto.getTags().size() + " | skippingWrite");
 				tagResponseDto.setTags(tagDto.getTags());
 			} else {
 				tagDto.setTags(newTags);
 				long t1 = System.currentTimeMillis();
 				Map<String, String> tags = packetWriter.addTags(tagDto, tagDto.getId());
 				LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, tagDto.getId(),
-				        "updateTags | packetWriter.addTags | timeTakenInMs: " + (System.currentTimeMillis() - t1));
+				        "updateTags | packetWriter.addTags | newTagCount: " + newTags.size() + " | timeTakenInMs: " + (System.currentTimeMillis() - t1));
 				tagResponseDto.setTags(tags);
 			}
 

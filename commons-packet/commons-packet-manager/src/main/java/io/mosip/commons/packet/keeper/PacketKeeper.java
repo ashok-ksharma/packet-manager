@@ -141,24 +141,35 @@ public class PacketKeeper {
      */
     public Packet getPacket(PacketInfo packetInfo) throws PacketKeeperException {
         String packetName = getName(packetInfo.getId(), packetInfo.getPacketName());
-        try (InputStream is = getAdapter().getObject(PACKET_MANAGER_ACCOUNT, packetInfo.getId(),
-                packetInfo.getSource(), packetInfo.getProcess(), packetName)) {
-
-            if (is == null) {
-                LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
-                        packetName, packetInfo.getProcess() + " Packet is not present in packet store.");
-                throw new PacketKeeperException(ErrorCode.PACKET_NOT_FOUND.getErrorCode(),
-                        ErrorCode.PACKET_NOT_FOUND.getErrorMessage());
+        long tTotal = System.currentTimeMillis();
+        try {
+            // Step 1: fetch encrypted packet bytes from ObjectStore
+            long tFetch = System.currentTimeMillis();
+            byte[] encryptedSubPacket;
+            try (InputStream is = getAdapter().getObject(PACKET_MANAGER_ACCOUNT, packetInfo.getId(),
+                    packetInfo.getSource(), packetInfo.getProcess(), packetName)) {
+                if (is == null) {
+                    LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
+                            packetName, packetInfo.getProcess() + " Packet is not present in packet store.");
+                    throw new PacketKeeperException(ErrorCode.PACKET_NOT_FOUND.getErrorCode(),
+                            ErrorCode.PACKET_NOT_FOUND.getErrorMessage());
+                }
+                encryptedSubPacket = IOUtils.toByteArray(is);
             }
-
-            // Convert stream to byte array (necessary for encryption/decryption and signature verification)
-            byte[] encryptedSubPacket = IOUtils.toByteArray(is);
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
+                    "PacketKeeper.getPacket | adapter.getObject | packetName: " + packetName
+                            + " | sizeBytes: " + encryptedSubPacket.length
+                            + " | timeTakenInMs: " + (System.currentTimeMillis() - tFetch));
 
             Packet packet = new Packet();
 
-            // Get metadata
+            // Step 2: fetch metadata
+            long tMeta = System.currentTimeMillis();
             Map<String, Object> metaInfo = getAdapter().getMetaData(PACKET_MANAGER_ACCOUNT, packetInfo.getId(),
                     packetInfo.getSource(), packetInfo.getProcess(), packetName);
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
+                    "PacketKeeper.getPacket | adapter.getMetaData | packetName: " + packetName
+                            + " | timeTakenInMs: " + (System.currentTimeMillis() - tMeta));
             if (metaInfo != null && !metaInfo.isEmpty()) {
                 packet.setPacketInfo(PacketManagerHelper.getPacketInfo(metaInfo));
             } else {
@@ -166,19 +177,31 @@ public class PacketKeeper {
                         packetName, "metainfo not found for this packet");
                 packet.setPacketInfo(packetInfo);
             }
+
+            // Step 3: decrypt
+            long tDecrypt = System.currentTimeMillis();
             byte[] subPacket = getCryptoService().decrypt(helper.getRefId(
                     packet.getPacketInfo().getId(), packet.getPacketInfo().getRefId()), encryptedSubPacket);
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
+                    "PacketKeeper.getPacket | crypto.decrypt | packetName: " + packetName
+                            + " | timeTakenInMs: " + (System.currentTimeMillis() - tDecrypt));
             packet.setPacket(subPacket);
 
-
-			if (!checkSignature(packet, encryptedSubPacket)) {
+            if (!checkSignature(packet, encryptedSubPacket)) {
                 LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
                         packetName, "Packet Integrity and Signature check failed");
                 throw new PacketIntegrityFailureException();
             }
 
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
+                    "PacketKeeper.getPacket | total | packetName: " + packetName
+                            + " | timeTakenInMs: " + (System.currentTimeMillis() - tTotal));
             return packet;
         } catch (Exception e) {
+            LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(),
+                    "PacketKeeper.getPacket | failed | packetName: " + packetName
+                            + " | timeTakenInMs: " + (System.currentTimeMillis() - tTotal)
+                            + " | error: " + e.getMessage());
             LOGGER.error(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, packetInfo.getId(), ExceptionUtils.getStackTrace(e));
             if (e.getMessage() != null && e.getMessage().contains(OBJECT_DOESNOT_EXISTS) && e.getMessage().contains(STATUS_404))
                 throw new ObjectDoesnotExistsException();
