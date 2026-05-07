@@ -5,9 +5,6 @@ import io.mosip.kernel.core.logger.spi.Logger;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
@@ -19,38 +16,27 @@ public class CacheTimingAspect {
 
     private static final Logger LOGGER = PacketManagerLogger.getLogger(CacheTimingAspect.class);
 
-    @Autowired
-    private CacheManager cacheManager;
-
     @Around("@annotation(cacheable)")
     public Object measureCacheTime(ProceedingJoinPoint pjp, Cacheable cacheable) throws Throwable {
         String methodName = pjp.getSignature().toShortString();
         String[] cacheNames = cacheable.value();
-        String cacheKey = Arrays.toString(pjp.getArgs());
-
-        boolean cacheHit = isCacheHit(cacheNames, cacheKey);
-
-        long start = System.nanoTime();
-        Object result = pjp.proceed();
-        long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+        String args = Arrays.toString(pjp.getArgs());
 
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
-                methodName,
-                "Cache " + (cacheHit ? "HIT" : "MISS") + " | method=" + methodName
-                        + " | caches=" + Arrays.toString(cacheNames)
-                        + " | args=" + cacheKey
-                        + " | elapsed=" + elapsedMs + "ms");
+                methodName, "CacheTimingAspect | ENTER | method=" + methodName
+                        + " | caches=" + Arrays.toString(cacheNames) + " | args=" + args);
 
-        return result;
-    }
-
-    private boolean isCacheHit(String[] cacheNames, String key) {
-        for (String cacheName : cacheNames) {
-            Cache cache = cacheManager.getCache(cacheName);
-            if (cache != null && cache.get(key) != null) {
-                return true;
-            }
+        long start = System.nanoTime();
+        try {
+            return pjp.proceed();
+        } finally {
+            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID,
+                    methodName,
+                    "CacheTimingAspect | EXIT | method=" + methodName
+                            + " | caches=" + Arrays.toString(cacheNames)
+                            + " | args=" + args
+                            + " | elapsed=" + elapsedMs + "ms");
         }
-        return false;
     }
 }
