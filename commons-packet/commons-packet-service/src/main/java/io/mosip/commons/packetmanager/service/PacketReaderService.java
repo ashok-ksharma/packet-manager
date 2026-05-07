@@ -199,7 +199,10 @@ public class PacketReaderService {
      */
     private InfoResponseDto infoInternalForSourceResolution(String id) {
         try {
+            long tInfo = System.currentTimeMillis();
             List<ObjectDto> allObjects = packetReader.info(id);
+            LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                    "infoInternalForSourceResolution | packetReader.info | containers: " + allObjects.size() + " | timeTakenInMs: " + (System.currentTimeMillis() - tInfo));
             List<ContainerInfoDto> containerInfoDtos = new ArrayList<>();
             Set<String> seen = new HashSet<>();
             for (ObjectDto o : allObjects) {
@@ -210,7 +213,10 @@ public class PacketReaderService {
                 containerInfo.setSource(o.getSource());
                 containerInfo.setProcess(o.getProcess());
                 containerInfo.setLastModified(o.getLastModified());
+                long tKeys = System.currentTimeMillis();
                 Set<String> demographics = packetReader.getAllKeys(id, containerInfo.getSource(), containerInfo.getProcess());
+                LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                        "infoInternalForSourceResolution | getAllKeys | source: " + o.getSource() + " process: " + o.getProcess() + " | timeTakenInMs: " + (System.currentTimeMillis() - tKeys));
                 containerInfo.setDemographics(demographics);
                 containerInfoDtos.add(containerInfo);
             }
@@ -376,7 +382,10 @@ public class PacketReaderService {
     }
 
     private ObjectDto searchProcessWithLatestIteration(String id, String source, String process) {
+        long t0 = System.currentTimeMillis();
         List<ObjectDto> allObjects = packetReader.info(id);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "searchProcessWithLatestIteration | packetReader.info | source: " + source + " process: " + process + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
         Collections.sort(allObjects, (i1, i2) -> extractInt(i2.getProcess()) - (extractInt(i1.getProcess())));
 
         Optional<ObjectDto> objectDto = allObjects.stream().filter(obj ->

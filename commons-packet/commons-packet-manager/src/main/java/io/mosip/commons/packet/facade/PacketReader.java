@@ -197,7 +197,11 @@ public class PacketReader {
     public List<ObjectDto> info(String id) {
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
                 "info called");
-        return packetKeeper.getAll(id);
+        long t0 = System.currentTimeMillis();
+        List<ObjectDto> result = packetKeeper.getAll(id);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "PacketReader.info | packetKeeper.getAll | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        return result;
     }
 
     /**
@@ -212,7 +216,11 @@ public class PacketReader {
     public Set<String> getAllKeys(String id, String source, String process) {
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
                 "getAllKeys for source : " + source + " process : " + process);
-        return getProvider(source, process).getAll(id, source, process).keySet();
+        long t0 = System.currentTimeMillis();
+        Set<String> keys = getProvider(source, process).getAll(id, source, process).keySet();
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "PacketReader.getAllKeys | provider.getAll | source: " + source + " | process: " + process + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        return keys;
     }
 
     /**
@@ -226,7 +234,11 @@ public class PacketReader {
     private Map<String, Object> getAllFields(String id, String source, String process) {
         LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
                 "getAllFields for source : " + source + " process : " + process);
-        return getProvider(source, process).getAll(id, source, process);
+        long t0 = System.currentTimeMillis();
+        Map<String, Object> fields = getProvider(source, process).getAll(id, source, process);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "PacketReader.getAllFields | provider.getAll | source: " + source + " | process: " + process + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+        return fields;
     }
 
     /**

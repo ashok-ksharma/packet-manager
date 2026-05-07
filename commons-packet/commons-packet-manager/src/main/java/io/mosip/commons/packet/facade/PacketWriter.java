@@ -218,13 +218,19 @@ public class PacketWriter {
 
 	@CacheEvict(value = "tags", key = "{#p1}")
 	public Map<String, String> addTags(TagDto tagDto,String id) {
+		long t0 = System.currentTimeMillis();
 		Map<String, String> tags = packetKeeper.addTags(tagDto);
+		LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+				"PacketWriter.addTags | packetKeeper.addTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
 		return tags;
 	}
 
 	@CacheEvict(value = "tags", key = "{#p1}")
 	public Map<String, String> addorUpdate(TagDto tagDto,String id) {
+		long t0 = System.currentTimeMillis();
 		Map<String, String> tags = packetKeeper.addorUpdate(tagDto);
+		LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+				"PacketWriter.addorUpdate | packetKeeper.addorUpdate | timeTakenInMs: " + (System.currentTimeMillis() - t0));
 		return tags;
 	}
 	

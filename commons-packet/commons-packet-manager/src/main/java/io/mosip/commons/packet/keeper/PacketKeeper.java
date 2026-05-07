@@ -274,22 +274,34 @@ public class PacketKeeper {
     }
 
 	public Map<String, String> addTags(TagDto tagDto) {
-			Map<String, String> tags = getAdapter().addTags(PACKET_MANAGER_ACCOUNT, tagDto.getId(), tagDto.getTags());
+		long t0 = System.currentTimeMillis();
+		Map<String, String> tags = getAdapter().addTags(PACKET_MANAGER_ACCOUNT, tagDto.getId(), tagDto.getTags());
+		LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, tagDto.getId(),
+				"PacketKeeper.addTags | adapter.addTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
 		return tags;
 	}
 
 	public Map<String, String> addorUpdate(TagDto tagDto) {
-			Map<String, String> tags = getAdapter().addTags(PACKET_MANAGER_ACCOUNT, tagDto.getId(), tagDto.getTags());
-			return tags;
+		long t0 = System.currentTimeMillis();
+		Map<String, String> tags = getAdapter().addTags(PACKET_MANAGER_ACCOUNT, tagDto.getId(), tagDto.getTags());
+		LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, tagDto.getId(),
+				"PacketKeeper.addorUpdate | adapter.addTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+		return tags;
 	}
 
 	public Map<String, String> getTags(String id) {
-			Map<String, String> existingTags = getAdapter().getTags(PACKET_MANAGER_ACCOUNT, id);
-         return existingTags;
+		long t0 = System.currentTimeMillis();
+		Map<String, String> existingTags = getAdapter().getTags(PACKET_MANAGER_ACCOUNT, id);
+		LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+				"PacketKeeper.getTags | adapter.getTags | timeTakenInMs: " + (System.currentTimeMillis() - t0));
+		return existingTags;
 	}
 
     public List<ObjectDto> getAll(String id) {
+        long t0 = System.currentTimeMillis();
         List<ObjectDto> allObjects = getAdapter().getAllObjects(PACKET_MANAGER_ACCOUNT, id);
+        LOGGER.info(PacketManagerLogger.SESSIONID, PacketManagerLogger.REGISTRATIONID, id,
+                "PacketKeeper.getAll | adapter.getAllObjects | containers: " + (allObjects != null ? allObjects.size() : 0) + " | timeTakenInMs: " + (System.currentTimeMillis() - t0));
         return allObjects;
     }
 
