@@ -58,7 +58,7 @@ public class PacketKeeperTest {
     private ObjectStoreAdapter swiftAdapter;
 
     @Mock
-    @Qualifier("S3Adapter")
+    @Qualifier("S3AdapterV2")
     private ObjectStoreAdapter s3Adapter;
 
     @Mock

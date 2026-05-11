@@ -57,7 +57,7 @@ public class PacketKeeper {
     private ObjectStoreAdapter swiftAdapter;
 
     @Autowired
-    @Qualifier("S3Adapter")
+    @Qualifier("S3AdapterV2")
     private ObjectStoreAdapter s3Adapter;
 
     @Autowired
